@@ -1,71 +1,96 @@
 @import "tailwindcss";
 
+/* Workbench palette: paper ground, black ink, target red. The desk (document area) is always dark. */
 :root {
   color-scheme: light;
-  --bg: #f4f3ef;
+  --ground: #f3f1ea;
   --surface: #ffffff;
-  --surface-2: #efeee9;
-  --border: #dddbd4;
-  --border-strong: #b9b7af;
-  --ink: #111110;
-  --ink-2: #52514e;
-  --ink-3: #75736d;
-  --accent: #c8141b;
-  --accent-soft: #fbe9e9;
-  --primary: #111110;
+  --surface-2: #ece9e0;
+  --line: #dad6cb;
+  --line-strong: #b8b3a6;
+  --ink: #17160f;
+  --ink-2: #4e4b42;
+  --ink-3: #6b675c;
+  --accent: #c1121f;
+  --accent-soft: #f7e3e1;
+  --accent-on-primary: #ff7a70;
+  --primary: #17160f;
   --primary-ink: #ffffff;
-  --series: #2a78d6;
-  --warn-bg: #fff4dc;
+  --desk: #2b2a26;
+  --desk-line: #3d3b35;
+  --desk-ink: #d9d5ca;
+  --desk-muted: #a9a497;
+  --desk-control: #4a4842;
+  --desk-raised: #37352f;
+  --series: #2a6fdb;
+  --warn-bg: #fff1d6;
   --warn-ink: #7a4b00;
-  --paper-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 8px 24px rgb(0 0 0 / 0.08);
+  --paper-shadow: 0 2px 4px rgb(0 0 0 / 0.3), 0 18px 40px rgb(0 0 0 / 0.35);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --bg: #0f0f0e;
-    --surface: #1a1a19;
-    --surface-2: #242422;
-    --border: #33322f;
-    --border-strong: #4a4945;
-    --ink: #f3f2ee;
-    --ink-2: #c3c2b7;
-    --ink-3: #8f8d86;
-    --accent: #ff5d55;
-    --accent-soft: #3a1a19;
-    --primary: #f3f2ee;
-    --primary-ink: #111110;
-    --series: #3987e5;
+    --ground: #121210;
+    --surface: #1b1a17;
+    --surface-2: #25241f;
+    --line: #33312b;
+    --line-strong: #4a4842;
+    --ink: #f3f1ea;
+    --ink-2: #c9c4b6;
+    --ink-3: #9a968a;
+    --accent: #ff6b61;
+    --accent-soft: #3a1c1a;
+    --accent-on-primary: #b3101c;
+    --primary: #f3f1ea;
+    --primary-ink: #17160f;
+    --desk: #0c0c0b;
+    --desk-line: #2a2925;
+    --desk-ink: #d9d5ca;
+    --desk-muted: #8f8b80;
+    --desk-control: #3a3833;
+    --desk-raised: #22211e;
+    --series: #5b9bf2;
     --warn-bg: #3a2d10;
     --warn-ink: #f5cf7a;
-    --paper-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 12px 32px rgb(0 0 0 / 0.5);
   }
 }
 
 @theme inline {
-  --color-bg: var(--bg);
+  --breakpoint-desk: 74rem;
+
+  --color-ground: var(--ground);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
-  --color-line: var(--border);
-  --color-line-strong: var(--border-strong);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-on-primary: var(--accent-on-primary);
   --color-primary: var(--primary);
   --color-primary-ink: var(--primary-ink);
+  --color-desk: var(--desk);
+  --color-desk-line: var(--desk-line);
+  --color-desk-ink: var(--desk-ink);
+  --color-desk-muted: var(--desk-muted);
+  --color-desk-control: var(--desk-control);
+  --color-desk-raised: var(--desk-raised);
   --color-series: var(--series);
   --color-warn-bg: var(--warn-bg);
   --color-warn-ink: var(--warn-ink);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --font-sans: var(--font-plex-sans), "Helvetica Neue", system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-display: var(--font-barlow), "Arial Narrow", sans-serif;
 }
 
 body {
-  background: var(--bg);
+  background: var(--ground);
   color: var(--ink);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* Number inputs: no spinners, they fight with typing decimals. */
@@ -82,4 +107,18 @@ input[type="number"] {
 :focus-visible {
   outline: 2px solid var(--series);
   outline-offset: 2px;
+}
+
+/* Small uppercase labels ("SETUP", "PRINT PACK"). */
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+dialog::backdrop {
+  background: rgb(23 22 15 / 0.45);
 }

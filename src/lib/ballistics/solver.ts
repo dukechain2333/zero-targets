@@ -1,14 +1,19 @@
-// Point-mass (3-DOF, no wind) exterior ballistics solver.
+// Point-mass (3-DOF) exterior ballistics solver.
 //
-// Coordinates: x = horizontal range, y = height, both in feet. The line of sight is the x axis
-// (level shot), and the bore starts `sightHeight` below it at the muzzle. Drag follows the
-// standard-projectile model: a = g - k(Mach) * v * |v|, where k = Cd(Mach) * 2.08551e-4 / BC for
-// ICAO standard sea-level air. Short-range zeroing is barely sensitive to atmosphere, so the
-// standard atmosphere is used throughout.
+// Coordinates: x = horizontal range, y = height, z = to the right, all in feet. The line of sight is
+// the x axis (level shot), and the bore starts `sightHeight` below it at the muzzle. Drag follows the
+// standard-projectile model: a = g - k(Mach) * v_air * |v_air|, where v_air is the velocity relative
+// to the air and k = densityRatio * Cd(Mach) * 2.08551e-4 / BC.
 
 import { G1_TABLE, G7_TABLE } from "./drag-tables";
 
 export type DragModel = "G1" | "G7";
+
+export interface Atmosphere {
+  /** Air density relative to ICAO standard sea level. */
+  densityRatio: number;
+  speedOfSoundFps: number;
+}
 
 export interface BallisticInput {
   muzzleVelocityFps: number;
@@ -16,12 +21,18 @@ export interface BallisticInput {
   dragModel: DragModel;
   /** Line of sight above the bore centerline at the muzzle, inches. */
   sightHeightIn: number;
+  /** Defaults to ICAO standard sea level. */
+  atmosphere?: Atmosphere;
+  /** Full-value crosswind from the shooter's left (9 o'clock), mph. */
+  crosswindMph?: number;
 }
 
 export interface TrajectoryPoint {
   rangeYd: number;
   /** Bullet path relative to the line of sight, inches (+ = above). */
   heightIn: number;
+  /** Wind drift, inches (+ = right). */
+  windageIn: number;
   velocityFps: number;
   timeS: number;
 }
@@ -29,8 +40,20 @@ export interface TrajectoryPoint {
 const GRAVITY_FPS2 = 32.17405;
 // Standard density (lb/ft^3) * pi / (4 * 2 * 144): turns Cd / BC into a drag factor.
 const DRAG_CONSTANT = 2.08551e-4;
-// Speed of sound at ICAO standard sea level, 59 °F.
-const SPEED_OF_SOUND_FPS = 49.0223 * Math.sqrt(59 + 459.67);
+const FPS_PER_MPH = 5280 / 3600;
+
+/** Dry air at an altitude (ICAO standard pressure for that altitude) and a measured temperature. */
+export function atmosphereAt(altitudeFt: number, temperatureF: number): Atmosphere {
+  const altitudeM = altitudeFt * 0.3048;
+  const pressureRatio = Math.pow(1 - (0.0065 * altitudeM) / 288.15, 5.255876);
+  const tempR = temperatureF + 459.67;
+  return {
+    densityRatio: pressureRatio * (518.67 / tempR),
+    speedOfSoundFps: 49.0223 * Math.sqrt(tempR),
+  };
+}
+
+export const STANDARD_ATMOSPHERE = atmosphereAt(0, 59);
 const TIME_STEP_S = 0.0002;
 const MIN_VELOCITY_FPS = 50;
 
@@ -122,45 +145,57 @@ export function sampleTrajectory(
   rangesYd: number[],
 ): TrajectoryPoint[] {
   const curve = CURVES[input.dragModel];
-  const dragScale = DRAG_CONSTANT / input.bc;
+  const atmo = input.atmosphere ?? STANDARD_ATMOSPHERE;
+  const dragScale = (atmo.densityRatio * DRAG_CONSTANT) / input.bc;
+  const machScale = 1 / atmo.speedOfSoundFps;
+  const wz = (input.crosswindMph ?? 0) * FPS_PER_MPH;
   const dt = TIME_STEP_S;
 
   let x = 0;
   let y = -input.sightHeightIn / 12;
+  let z = 0;
   let vx = input.muzzleVelocityFps * Math.cos(elevationRad);
   let vy = input.muzzleVelocityFps * Math.sin(elevationRad);
+  let vz = 0;
   let t = 0;
 
-  const accel = (ux: number, uy: number): [number, number] => {
-    const v = Math.hypot(ux, uy);
-    const k = pchipEval(curve, v / SPEED_OF_SOUND_FPS) * dragScale * v;
-    return [-k * ux, -GRAVITY_FPS2 - k * uy];
+  // Drag acts on the velocity relative to the air.
+  const accel = (ux: number, uy: number, uz: number): [number, number, number] => {
+    const rz = uz - wz;
+    const v = Math.hypot(ux, uy, rz);
+    const k = pchipEval(curve, v * machScale) * dragScale * v;
+    return [-k * ux, -GRAVITY_FPS2 - k * uy, -k * rz];
   };
 
   const out: TrajectoryPoint[] = [];
   let next = 0;
   while (next < rangesYd.length && rangesYd[next] <= 0) {
-    out.push({ rangeYd: 0, heightIn: y * 12, velocityFps: Math.hypot(vx, vy), timeS: 0 });
+    out.push({ rangeYd: 0, heightIn: y * 12, windageIn: 0, velocityFps: Math.hypot(vx, vy), timeS: 0 });
     next++;
   }
 
   while (next < rangesYd.length) {
     // Classic RK4 step on (position, velocity).
-    const [a1x, a1y] = accel(vx, vy);
+    const [a1x, a1y, a1z] = accel(vx, vy, vz);
     const v2x = vx + 0.5 * dt * a1x;
     const v2y = vy + 0.5 * dt * a1y;
-    const [a2x, a2y] = accel(v2x, v2y);
+    const v2z = vz + 0.5 * dt * a1z;
+    const [a2x, a2y, a2z] = accel(v2x, v2y, v2z);
     const v3x = vx + 0.5 * dt * a2x;
     const v3y = vy + 0.5 * dt * a2y;
-    const [a3x, a3y] = accel(v3x, v3y);
+    const v3z = vz + 0.5 * dt * a2z;
+    const [a3x, a3y, a3z] = accel(v3x, v3y, v3z);
     const v4x = vx + dt * a3x;
     const v4y = vy + dt * a3y;
-    const [a4x, a4y] = accel(v4x, v4y);
+    const v4z = vz + dt * a3z;
+    const [a4x, a4y, a4z] = accel(v4x, v4y, v4z);
 
     const nx = x + (dt / 6) * (vx + 2 * v2x + 2 * v3x + v4x);
     const ny = y + (dt / 6) * (vy + 2 * v2y + 2 * v3y + v4y);
+    const nz = z + (dt / 6) * (vz + 2 * v2z + 2 * v3z + v4z);
     const nvx = vx + (dt / 6) * (a1x + 2 * a2x + 2 * a3x + a4x);
     const nvy = vy + (dt / 6) * (a1y + 2 * a2y + 2 * a3y + a4y);
+    const nvz = vz + (dt / 6) * (a1z + 2 * a2z + 2 * a3z + a4z);
     const nt = t + dt;
 
     // Emit every requested range crossed during this step (linear interpolation; steps are < 1 ft).
@@ -170,7 +205,8 @@ export function sampleTrajectory(
       out.push({
         rangeYd: rangesYd[next],
         heightIn: (y + f * (ny - y)) * 12,
-        velocityFps: Math.hypot(vx + f * (nvx - vx), vy + f * (nvy - vy)),
+        windageIn: (z + f * (nz - z)) * 12,
+        velocityFps: Math.hypot(vx + f * (nvx - vx), vy + f * (nvy - vy), vz + f * (nvz - vz)),
         timeS: t + f * dt,
       });
       next++;
@@ -178,8 +214,10 @@ export function sampleTrajectory(
 
     x = nx;
     y = ny;
+    z = nz;
     vx = nvx;
     vy = nvy;
+    vz = nvz;
     t = nt;
     if (Math.hypot(vx, vy) < MIN_VELOCITY_FPS || vx <= 0) break;
   }

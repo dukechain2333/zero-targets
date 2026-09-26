@@ -1,5 +1,5 @@
 import type { DragModel } from "./ballistics/solver";
-import { AMMO_DATA, BARREL_PRESETS_BY_GROUP } from "./ammo-data";
+import { AMMO_DATA, BARREL_PRESETS_BY_GROUP, TABLE_RANGE_BY_GROUP } from "./ammo-data";
 import { BARREL_PRESETS, type Preset } from "./presets";
 
 export interface Load {
@@ -63,4 +63,11 @@ export function estimateMuzzleVelocity(load: Pick<Load, "mvByBarrel">, barrelIn:
 export function barrelPresetsFor(load: Load | null): Preset[] {
   const lengths = load ? BARREL_PRESETS_BY_GROUP[load.group] : undefined;
   return lengths ? lengths.map((v) => ({ value: v, label: String(v) })) : BARREL_PRESETS;
+}
+
+/** A sensible longest range for the ballistic card and table, yards. */
+export function defaultTableRangeYd(load: Load | null, muzzleVelocityFps: number): number {
+  if (muzzleVelocityFps < 1150) return load?.group.startsWith("9mm") ? 150 : 200;
+  if (!load) return muzzleVelocityFps < 2000 ? 300 : 500;
+  return TABLE_RANGE_BY_GROUP[load.group] ?? 500;
 }

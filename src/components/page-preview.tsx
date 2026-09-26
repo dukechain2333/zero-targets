@@ -1,4 +1,4 @@
-import type { Prim, TargetScene } from "@/lib/target/scene";
+import type { PageScene, Prim } from "@/lib/target/scene";
 
 const PT = 1 / 72;
 const FONT = "Helvetica, Arial, sans-serif";
@@ -8,7 +8,17 @@ function renderPrim(p: Prim, i: number) {
   switch (p.t) {
     case "line":
       return (
-        <line key={i} x1={p.x1} y1={p.y1} x2={p.x2} y2={p.y2} stroke={p.color} strokeWidth={p.w * PT} strokeLinecap={p.cap ?? "butt"} />
+        <line
+          key={i}
+          x1={p.x1}
+          y1={p.y1}
+          x2={p.x2}
+          y2={p.y2}
+          stroke={p.color}
+          strokeWidth={p.w * PT}
+          strokeLinecap={p.cap ?? "butt"}
+          strokeDasharray={p.dash ? `${p.dash} ${p.dash}` : undefined}
+        />
       );
     case "circle":
       return (
@@ -61,13 +71,13 @@ function renderPrim(p: Prim, i: number) {
 }
 
 /** On-screen rendering of the exact page that the PDF export draws. */
-export function TargetPreview({ scene, className }: { scene: TargetScene; className?: string }) {
+export function PagePreview({ scene, label, className }: { scene: PageScene; label: string; className?: string }) {
   return (
     <svg
       viewBox={`0 0 ${scene.widthIn} ${scene.heightIn}`}
       className={className}
       role="img"
-      aria-label={`Preview of the printable target: ${scene.title}`}
+      aria-label={label}
     >
       <rect width={scene.widthIn} height={scene.heightIn} fill="#ffffff" />
       {scene.prims.map(renderPrim)}

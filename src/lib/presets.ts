@@ -80,6 +80,18 @@ export const TARGET_DISTANCE_PRESETS: Record<UnitSystem, Preset[]> = {
   ],
 };
 
+/** Longest range in the ballistic card and table. */
+export const TABLE_RANGE_PRESETS: Record<UnitSystem, Preset[]> = {
+  imperial: [100, 200, 300, 400, 500, 600, 800, 1000].map((v) => ({ value: yd(v), label: String(v) })),
+  metric: [100, 200, 300, 400, 500, 600, 800, 1000].map((v) => ({ value: m(v), label: String(v) })),
+};
+
+/** Row spacing of the detailed ballistic table. */
+export const TABLE_STEP_PRESETS: Record<UnitSystem, Preset[]> = {
+  imperial: [10, 25, 50, 100].map((v) => ({ value: yd(v), label: String(v) })),
+  metric: [10, 25, 50, 100].map((v) => ({ value: m(v), label: String(v) })),
+};
+
 export type AngularUnit = "moa" | "mil";
 
 export interface ClickPreset {

@@ -2,7 +2,7 @@
 // jsPDF is loaded on demand so it stays out of the initial page bundle.
 
 import type { Guide } from "../guide";
-import type { Prim, TargetScene } from "./scene";
+import type { PageScene, Prim } from "./scene";
 
 const PT = 1 / 72;
 
@@ -18,7 +18,9 @@ function drawPrim(doc: JsPdf, p: Prim) {
       doc.setDrawColor(p.color);
       doc.setLineWidth(p.w * PT);
       doc.setLineCap(p.cap ?? "butt");
+      if (p.dash) doc.setLineDashPattern([p.dash, p.dash], 0);
       doc.line(p.x1, p.y1, p.x2, p.y2);
+      if (p.dash) doc.setLineDashPattern([], 0);
       break;
     case "circle": {
       if (p.fill) doc.setFillColor(p.fill);
@@ -118,14 +120,18 @@ function drawGuidePage(doc: JsPdf, guide: Guide, widthIn: number, heightIn: numb
   }
 }
 
-export async function renderTargetPdf(scene: TargetScene, guide: Guide | null): Promise<JsPdf> {
+/** One printed part of the pack: a drawn page, or the guide (which flows onto as many pages as it needs). */
+export type PackPart = { kind: "page"; scene: PageScene } | { kind: "guide"; guide: Guide };
+
+/** Render the print pack (any mix of target, guide, cards and table pages) as one PDF, 1:1 scale. */
+export async function renderPackPdf(parts: PackPart[], paper: { widthIn: number; heightIn: number }, title: string): Promise<JsPdf> {
   const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ unit: "in", format: [scene.widthIn, scene.heightIn], orientation: "portrait" });
-  doc.setProperties({ title: scene.title, subject: "Printable zeroing target", creator: "zero-targets" });
-  for (const p of scene.prims) drawPrim(doc, p);
-  if (guide) {
-    doc.addPage([scene.widthIn, scene.heightIn], "portrait");
-    drawGuidePage(doc, guide, scene.widthIn, scene.heightIn);
-  }
+  const doc = new jsPDF({ unit: "in", format: [paper.widthIn, paper.heightIn], orientation: "portrait" });
+  doc.setProperties({ title, subject: "Zeroing target and ballistic data", creator: "zero-targets" });
+  parts.forEach((part, i) => {
+    if (i > 0) doc.addPage([paper.widthIn, paper.heightIn], "portrait");
+    if (part.kind === "page") for (const p of part.scene.prims) drawPrim(doc, p);
+    else drawGuidePage(doc, part.guide, paper.widthIn, paper.heightIn);
+  });
   return doc;
 }

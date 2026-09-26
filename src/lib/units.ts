@@ -65,3 +65,22 @@ export function fmtVelocity(fps: number, s: UnitSystem): string {
 export function fmtBarrel(inch: number): string {
   return `${trimNumber(inch, 2)} in`;
 }
+
+// ---------------------------------------------------------------- wind and energy
+
+export const MPH_PER_MPS = 3600 / 1609.344;
+
+export const windUnit = (s: UnitSystem) => (s === "metric" ? "m/s" : "mph");
+export const energyUnit = (s: UnitSystem) => (s === "metric" ? "J" : "ft-lb");
+
+export const windToDisplay = (mph: number, s: UnitSystem) => (s === "metric" ? mph / MPH_PER_MPS : mph);
+
+/** Kinetic energy in ft-lb (imperial) or joules (metric). */
+export function energy(weightGr: number, fps: number, s: UnitSystem): number {
+  const ftLb = (weightGr * fps * fps) / 450240;
+  return s === "metric" ? ftLb * 1.3558179 : ftLb;
+}
+
+export function fmtWind(mph: number, s: UnitSystem): string {
+  return `${trimNumber(windToDisplay(mph, s), 1)} ${windUnit(s)}`;
+}

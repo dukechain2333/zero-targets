@@ -21,7 +21,18 @@ import {
 import { textWidthIn } from "./text-metrics";
 
 export type Prim =
-  | { t: "line"; x1: number; y1: number; x2: number; y2: number; w: number; color: string; cap?: "butt" | "square" }
+  | {
+      t: "line";
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      w: number;
+      color: string;
+      cap?: "butt" | "square";
+      /** Dash and gap length, inches. */
+      dash?: number;
+    }
   | { t: "circle"; cx: number; cy: number; r: number; fill?: string; stroke?: string; w?: number }
   | { t: "rect"; x: number; y: number; w: number; h: number; fill?: string; stroke?: string; lw?: number; radius?: number }
   | { t: "tri"; pts: [[number, number], [number, number], [number, number]]; fill: string }
@@ -48,10 +59,14 @@ export interface GridSpec {
   stepIn: number;
 }
 
-export interface TargetScene {
+/** One printed page. */
+export interface PageScene {
   widthIn: number;
   heightIn: number;
   prims: Prim[];
+}
+
+export interface TargetScene extends PageScene {
   /** False when AIM and IMPACT cannot both fit on this paper. */
   fits: boolean;
   grid: GridSpec;

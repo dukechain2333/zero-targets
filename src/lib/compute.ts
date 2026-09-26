@@ -41,6 +41,7 @@ export function computeZero(setup: Setup): ZeroResult {
     bc: resolved.bc,
     dragModel: resolved.dragModel,
     sightHeightIn: resolved.sightHeightIn,
+    atmosphere: resolved.atmosphere,
   };
   const { zeroYd, targetYd } = setup;
 

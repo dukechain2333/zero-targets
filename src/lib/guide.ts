@@ -3,7 +3,16 @@
 import type { ZeroResult } from "./compute";
 import type { Setup } from "./setup";
 import { clicksPerSquareText, distanceLabel, unitLabel, type GridSpec } from "./target/scene";
-import { distanceToDisplay, distanceUnit, fmtBarrel, fmtOffset, fmtSightHeight, fmtVelocity, MM_PER_IN, trimNumber } from "./units";
+import {
+  distanceToDisplay,
+  distanceUnit,
+  fmtBarrel,
+  fmtOffset,
+  fmtSightHeight,
+  fmtVelocity,
+  MM_PER_IN,
+  trimNumber,
+} from "./units";
 
 export interface Guide {
   title: string;
@@ -110,7 +119,7 @@ export function buildGuide(setup: Setup, result: ZeroResult, grid: GridSpec): Gu
   }
 
   const notes = [
-    `Bullet path from a point-mass solver using the ${resolved.dragModel} ballistic coefficient ${resolved.bc}, ICAO standard atmosphere (59 °F / 15 °C, sea level), no wind. Short-range zeroing barely depends on weather.`,
+    `Bullet path from a point-mass solver using the ${resolved.dragModel} ballistic coefficient ${resolved.bc}, ICAO standard atmosphere (sea level, 59 °F / 15 °C), no wind, level shot. Short-range zeroing barely depends on weather.`,
     `If your real muzzle velocity is 100 fps slower, the impact point moves ${fmtOffset(Math.abs(sensitivity.mvMinus100Fps), u)}. If your sight is 0.1 in (2.5 mm) higher, it moves ${fmtOffset(Math.abs(sensitivity.sightHeightPlusTenth), u)}.`,
     "Sight height is what matters most. Measure from the bore centerline to the center of the optic if your mount height is unknown.",
   ];

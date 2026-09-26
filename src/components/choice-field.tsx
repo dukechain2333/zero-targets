@@ -6,7 +6,8 @@ import { trimNumber } from "@/lib/units";
 
 interface ChoiceFieldProps {
   label: string;
-  description?: string;
+  /** Short note to the right of the label (e.g. what the chip hints mean). */
+  aside?: string;
   /** Presets in canonical units. */
   presets: Preset[];
   /** Current value in canonical units. */
@@ -18,17 +19,19 @@ interface ChoiceFieldProps {
   toDisplay?: (canonical: number) => number;
   fromDisplay?: (display: number) => number;
   decimals?: number;
-  /** Shown under the chips for the chosen value (e.g. converted units). */
+  /** Second line inside each chip: what picking that preset leads to. */
+  hintFor?: (canonical: number) => string | undefined;
+  /** Shown under the chips (defaults to the chosen preset's hint). */
   note?: React.ReactNode;
 }
 
 const identity = (v: number) => v;
 const EPS = 1e-6;
 
-/** Common values as chips, plus a free-form custom value. */
+/** Preset chips plus an "Other" input that lives in the same row. */
 export function ChoiceField({
   label,
-  description,
+  aside,
   presets,
   value,
   onChange,
@@ -37,112 +40,106 @@ export function ChoiceField({
   toDisplay = identity,
   fromDisplay = identity,
   decimals = 2,
+  hintFor,
   note,
 }: ChoiceFieldProps) {
   const id = useId();
   const matched = presets.find((p) => Math.abs(p.value - value) < EPS);
-  const [customWanted, setCustomWanted] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
-  const customActive = customWanted || !matched;
+  const custom = !matched;
+  const tall = hintFor != null;
 
-  const shown = trimNumber(toDisplay(value), decimals);
-  const text = draft ?? shown;
-  const lo = trimNumber(toDisplay(limits[0]), decimals);
-  const hi = trimNumber(toDisplay(limits[1]), decimals);
-  const parsed = Number(text);
+  const text = draft ?? (custom ? trimNumber(toDisplay(value), decimals) : "");
+  const n = Number(text);
   const invalid =
     draft != null &&
-    (text.trim() === "" || !Number.isFinite(parsed) || fromDisplay(parsed) < limits[0] - EPS || fromDisplay(parsed) > limits[1] + EPS);
+    draft.trim() !== "" &&
+    (!Number.isFinite(n) || fromDisplay(n) < limits[0] - EPS || fromDisplay(n) > limits[1] + EPS);
+  const lo = trimNumber(toDisplay(limits[0]), decimals);
+  const hi = trimNumber(toDisplay(limits[1]), decimals);
+
+  const chipBase = `flex flex-col items-center justify-center rounded-[7px] border font-mono tabular-nums transition-colors ${
+    tall ? "h-12 w-14 gap-px" : "h-9 min-w-[50px] px-2"
+  }`;
 
   return (
-    <div role="group" aria-labelledby={`${id}-label`} className="space-y-2">
-      <div className="flex items-baseline justify-between gap-3">
-        <span id={`${id}-label`} className="text-sm font-semibold text-ink">
+    <div role="radiogroup" aria-labelledby={`${id}-label`} className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-3 text-xs">
+        <span id={`${id}-label`} className="font-medium text-ink-2">
           {label}
+          {unit && <span className="font-normal text-ink-3">, {unit}</span>}
         </span>
-        {description && <span className="text-xs text-ink-3">{description}</span>}
+        {aside && <span className="text-right text-ink-3">{aside}</span>}
       </div>
       <div className="flex flex-wrap gap-1.5">
         {presets.map((p) => {
-          const on = !customActive && matched === p;
+          const on = matched === p;
+          const hint = hintFor?.(p.value);
           return (
             <button
               key={p.label}
               type="button"
-              aria-pressed={on}
+              role="radio"
+              aria-checked={on}
               title={p.hint}
               onClick={() => {
-                setCustomWanted(false);
                 setDraft(null);
                 onChange(p.value);
               }}
-              className={`h-9 min-w-12 rounded-md border px-2.5 font-mono text-sm tabular-nums transition-colors ${
-                on
-                  ? "border-primary bg-primary text-primary-ink"
-                  : "border-line bg-surface text-ink hover:border-line-strong"
+              className={`${chipBase} ${
+                on ? "border-primary bg-primary text-primary-ink" : "border-line bg-surface text-ink hover:border-line-strong"
               }`}
             >
-              {p.label}
+              <span className={tall ? `text-[15px] ${on ? "font-semibold" : "font-medium"}` : `text-sm ${on ? "font-semibold" : ""}`}>
+                {p.label}
+              </span>
+              {tall && <span className={`text-[10px] ${on ? "opacity-75" : "text-ink-3"}`}>{hint ?? " "}</span>}
             </button>
           );
         })}
-        <button
-          type="button"
-          aria-pressed={customActive}
-          onClick={() => {
-            setCustomWanted(true);
-            requestAnimationFrame(() => document.getElementById(`${id}-input`)?.focus());
-          }}
-          className={`h-9 rounded-md border px-3 text-sm transition-colors ${
-            customActive
-              ? "border-primary bg-primary text-primary-ink"
-              : "border-dashed border-line-strong bg-transparent text-ink-2 hover:text-ink"
+        <label
+          className={`flex items-center gap-1 rounded-[7px] border px-2.5 transition-colors focus-within:border-series ${
+            tall ? "h-12 w-[118px]" : "h-9 w-[104px]"
+          } ${
+            invalid
+              ? "border-accent bg-surface"
+              : custom
+                ? "border-primary bg-surface"
+                : "border-dashed border-line-strong bg-ground"
           }`}
         >
-          Custom
-        </button>
-      </div>
-
-      {customActive && (
-        <div className="flex items-center gap-2">
-          <label htmlFor={`${id}-input`} className="sr-only">
-            Custom {label.toLowerCase()} in {unit}
-          </label>
-          <div
-            className={`flex h-9 w-40 items-center rounded-md border bg-surface pr-2.5 focus-within:border-series ${
-              invalid ? "border-accent" : "border-line-strong"
-            }`}
-          >
-            <input
-              id={`${id}-input`}
-              type="number"
-              inputMode="decimal"
-              step="any"
-              value={text}
-              aria-invalid={invalid}
-              aria-describedby={`${id}-range`}
-              onChange={(e) => {
-                const raw = e.target.value;
-                setDraft(raw);
-                const n = Number(raw);
-                if (raw.trim() !== "" && Number.isFinite(n)) {
-                  const canonical = fromDisplay(n);
-                  if (canonical >= limits[0] - EPS && canonical <= limits[1] + EPS) onChange(canonical);
-                }
-              }}
-              onBlur={() => setDraft(null)}
-              className="h-full w-full min-w-0 bg-transparent px-2.5 font-mono text-sm tabular-nums text-ink outline-none focus-visible:outline-none"
-            />
-            <span className="text-sm text-ink-3">{unit}</span>
-          </div>
-          <span id={`${id}-range`} className={`text-xs ${invalid ? "text-accent" : "text-ink-3"}`}>
-            {lo} to {hi} {unit}
+          <span className="sr-only">
+            Other {label.toLowerCase()} in {unit}
           </span>
-        </div>
-      )}
-
-      {(note || (matched?.hint && !customActive)) && (
-        <p className="text-xs text-ink-2">{note ?? matched?.hint}</p>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="any"
+            placeholder="Other"
+            value={text}
+            aria-invalid={invalid}
+            aria-describedby={invalid ? `${id}-err` : undefined}
+            onChange={(e) => {
+              const raw = e.target.value;
+              setDraft(raw);
+              const v = Number(raw);
+              if (raw.trim() !== "" && Number.isFinite(v)) {
+                const canonical = fromDisplay(v);
+                if (canonical >= limits[0] - EPS && canonical <= limits[1] + EPS) onChange(canonical);
+              }
+            }}
+            onBlur={() => setDraft(null)}
+            className="w-full min-w-0 bg-transparent font-mono text-sm tabular-nums text-ink outline-none placeholder:font-sans placeholder:text-ink-3 focus-visible:outline-none"
+          />
+          {custom && !invalid && <span className="text-xs text-ink-3">{unit}</span>}
+        </label>
+      </div>
+      {invalid ? (
+        <p id={`${id}-err`} className="text-xs text-accent">
+          Enter {lo} to {hi} {unit}.
+        </p>
+      ) : (
+        (note ?? matched?.hint) && <p className="text-xs text-ink-2">{note ?? matched?.hint}</p>
       )}
     </div>
   );

@@ -3,7 +3,9 @@
 Printable short-range zeroing targets. Enter your ammunition, barrel length, optic height, the zero
 distance you want and the distance you can actually shoot at. zero-targets computes where the bullet
 has to hit at that distance and gives you a 1:1 PDF target with an AIM point, the IMPACT point and a
-grid in MOA or MIL, plus a setup-specific zeroing guide.
+grid in MOA or MIL, plus a setup-specific zeroing guide, cut-out ballistic cards and a detailed ballistic
+table (path, elevation and clicks, wind drift, velocity, energy, time of flight). Tick any of the four in the
+print pack and they download as one PDF.
 
 Everything runs in the browser: the ballistic solver, the target layout and the PDF export. The site
 is a single statically rendered Next.js page, so it deploys to Vercel with no configuration.
@@ -15,19 +17,26 @@ is a single statically rendered Next.js page, so it deploys to Vercel with no co
 - Ammunition picker with published muzzle velocity by barrel length for common 5.56, .300 BLK, 9mm,
   7.62x39, .308 and 6.5 Creedmoor loads, a chronograph override, and custom bullets (weight, G1/G7 BC).
 - Imperial or metric units, MOA or MIL grids (from the turret click value), five paper sizes.
+- Workbench layout: setup on the left (each choice shows what it leads to), the documents in the middle
+  (Fit / 100% zoom), the result and the print pack on the right. On phones the setup opens in sheets.
 - Live preview that is drawn from the same geometry as the PDF, with a scale-check bar on the page.
-- Zeroing guide (also page 2 of the PDF), bullet path chart and table.
+- Ballistic cards (wallet size, 8 per Letter page, with cut lines) and a multi-page ballistic table out to
+  any range and step, with drift for a 10 mph full-value crosswind.
+- Zeroing guide, bullet path chart, and the ballistic table as a page or as data.
 - The whole setup is kept in the URL, so a link reproduces the same target.
 
 ## How the numbers are computed
 
 `src/lib/ballistics/solver.ts` is a point-mass trajectory solver: RK4 integration, standard G1/G7 drag
-tables with monotone cubic interpolation, ICAO standard atmosphere, no wind. It solves the bore angle
-that puts the bullet on the line of sight at the zero distance, then reads the bullet path at the target
-distance. Sight height = optic height above the rail + rail-to-bore height (1.21 in for an AR-15 flat-top).
+tables with monotone cubic interpolation. Zeroing assumes still air on level ground in the ICAO standard
+atmosphere; the cards and table add drift for a 10 mph full-value crosswind. (The solver itself also takes
+altitude and temperature.) It solves the bore angle that puts the bullet on the line of sight at the zero
+distance, then reads the bullet path at the target distance and at every row of the ballistic table.
+Sight height = optic height above the rail + rail-to-bore height (1.21 in for an AR-15 flat-top).
 
-The solver is tested against [py-ballisticcalc](https://github.com/o-murphy/py-ballisticcalc) and agrees
-to within 0.01 in out to 100 yd (`src/lib/ballistics/solver.test.ts`).
+The solver is tested against [py-ballisticcalc](https://github.com/o-murphy/py-ballisticcalc): within
+0.01 in out to 100 yd, and within 0.5% for drop and wind drift out to 800 yd at altitude
+(`src/lib/ballistics/solver.test.ts`).
 
 ## Development
 
@@ -43,12 +52,14 @@ npm run build
 
 ```
 src/app/                  page, layout, global styles
-src/components/           form fields, target preview, trajectory chart, guide
+src/components/           workbench: setup sections, desk (document previews), inspector, sheets
 src/lib/ballistics/       solver and drag tables (+ reference fixture)
 src/lib/ammo-data.ts      load presets and velocity-by-barrel data with sources
 src/lib/compute.ts        setup -> offsets, crossings, sensitivity
+src/lib/ballistic-table.ts  range-by-range rows for the cards and table
 src/lib/target/scene.ts   printable page as drawing primitives (inches)
-src/lib/target/pdf.ts     jsPDF renderer for the scene and the guide page
+src/lib/target/ballistics-pages.ts  card sheet and table pages
+src/lib/target/pdf.ts     jsPDF renderer for pages and the guide page
 src/lib/guide.ts          setup-specific zeroing instructions
 ```
 

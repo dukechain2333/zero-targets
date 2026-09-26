@@ -1,5 +1,5 @@
 import { DEFAULT_LOAD_ID, estimateMuzzleVelocity, getLoad, type Load } from "./ammo";
-import type { DragModel } from "./ballistics/solver";
+import { STANDARD_ATMOSPHERE, type Atmosphere, type DragModel } from "./ballistics/solver";
 import {
   CLICK_PRESETS,
   PAPER_SIZES,
@@ -31,6 +31,8 @@ export interface Setup {
   paperId: string;
   /** Turret click value; also picks the target grid (MOA or MIL). */
   clickId: string;
+  tableMaxYd: number;
+  tableStepYd: number;
 }
 
 export const DEFAULT_SETUP: Setup = {
@@ -45,6 +47,8 @@ export const DEFAULT_SETUP: Setup = {
   targetYd: 25,
   paperId: "letter",
   clickId: "0.5moa",
+  tableMaxYd: 500,
+  tableStepYd: 25,
 };
 
 export const LIMITS = {
@@ -56,6 +60,8 @@ export const LIMITS = {
   mvFps: [300, 4500],
   bc: [0.02, 1.5],
   weightGr: [10, 800],
+  tableMaxYd: [25, 2000],
+  tableStepYd: [5, 200],
 } as const satisfies Record<string, readonly [number, number]>;
 
 export const clamp = (v: number, [lo, hi]: readonly [number, number]) => Math.min(hi, Math.max(lo, v));
@@ -71,6 +77,9 @@ export interface ResolvedSetup {
   muzzleVelocityFps: number;
   mvSource: "estimated" | "extrapolated" | "measured";
   sightHeightIn: number;
+  weightGr: number;
+  /** Zeroing assumes still air on level ground, so everything uses the ICAO standard atmosphere. */
+  atmosphere: Atmosphere;
   paper: PaperSize;
   click: ClickPreset;
 }
@@ -100,6 +109,8 @@ export function resolveSetup(s: Setup): ResolvedSetup {
     muzzleVelocityFps,
     mvSource,
     sightHeightIn: s.opticHeightIn + s.railToBoreIn,
+    weightGr: load ? load.weightGr : s.customLoad.weightGr,
+    atmosphere: STANDARD_ATMOSPHERE,
     paper: PAPER_SIZES.find((p) => p.id === s.paperId) ?? PAPER_SIZES[0],
     click: CLICK_PRESETS.find((c) => c.id === s.clickId) ?? CLICK_PRESETS[0],
   };
@@ -147,12 +158,18 @@ const CODECS: ParamCodec[] = [
   { key: "at", get: (s) => fmtYd(s.targetYd), set: (s, v) => withNum(s, v, "targetYd", LIMITS.targetYd) },
   { key: "paper", get: (s) => s.paperId, set: (s, v) => (PAPER_SIZES.some((p) => p.id === v) ? { ...s, paperId: v } : s) },
   { key: "click", get: (s) => s.clickId, set: (s, v) => (CLICK_PRESETS.some((c) => c.id === v) ? { ...s, clickId: v } : s) },
+  { key: "range", get: (s) => fmtYd(s.tableMaxYd), set: (s, v) => withNum(s, v, "tableMaxYd", LIMITS.tableMaxYd) },
+  { key: "step", get: (s) => fmtYd(s.tableStepYd), set: (s, v) => withNum(s, v, "tableStepYd", LIMITS.tableStepYd) },
 ];
 
 // Yards with enough precision to round-trip metric presets (25 m = 27.340332 yd).
 const fmtYd = (v: number) => String(Number(v.toFixed(6)));
 
-function withNum<K extends "barrelIn" | "opticHeightIn" | "railToBoreIn" | "zeroYd" | "targetYd">(
+type NumericKey = {
+  [K in keyof Setup]: Setup[K] extends number ? K : never;
+}[keyof Setup];
+
+function withNum<K extends NumericKey>(
   s: Setup,
   v: string,
   key: K,

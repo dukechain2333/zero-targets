@@ -370,3 +370,13 @@ export const BARREL_PRESETS_BY_GROUP: Record<string, number[]> = {
   [G308]: [12.5, 14.5, 16, 18, 20, 22],
   [G65]: [16, 18, 20, 22, 24],
 };
+
+/** Default longest range of the ballistic card and table for each caliber, yards. */
+export const TABLE_RANGE_BY_GROUP: Record<string, number> = {
+  [G556]: 500,
+  [GBLK]: 300,
+  [G9]: 150,
+  [G762]: 400,
+  [G308]: 800,
+  [G65]: 1000,
+};
