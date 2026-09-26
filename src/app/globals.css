@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --bg: #f4f3ef;
+  --surface: #ffffff;
+  --surface-2: #efeee9;
+  --border: #dddbd4;
+  --border-strong: #b9b7af;
+  --ink: #111110;
+  --ink-2: #52514e;
+  --ink-3: #75736d;
+  --accent: #c8141b;
+  --accent-soft: #fbe9e9;
+  --primary: #111110;
+  --primary-ink: #ffffff;
+  --series: #2a78d6;
+  --warn-bg: #fff4dc;
+  --warn-ink: #7a4b00;
+  --paper-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 8px 24px rgb(0 0 0 / 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0f0f0e;
+    --surface: #1a1a19;
+    --surface-2: #242422;
+    --border: #33322f;
+    --border-strong: #4a4945;
+    --ink: #f3f2ee;
+    --ink-2: #c3c2b7;
+    --ink-3: #8f8d86;
+    --accent: #ff5d55;
+    --accent-soft: #3a1a19;
+    --primary: #f3f2ee;
+    --primary-ink: #111110;
+    --series: #3987e5;
+    --warn-bg: #3a2d10;
+    --warn-ink: #f5cf7a;
+    --paper-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 12px 32px rgb(0 0 0 / 0.5);
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
+  --color-series: var(--series);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-ink: var(--warn-ink);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Number inputs: no spinners, they fight with typing decimals. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+:focus-visible {
+  outline: 2px solid var(--series);
+  outline-offset: 2px;
+}
