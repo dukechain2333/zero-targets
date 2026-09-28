@@ -216,13 +216,15 @@ export function buildTargetScene(setup: Setup, result: ZeroResult): TargetScene 
   const armRoom = armDir < 0 ? ay - r - gap - gy0 - 0.1 : gy1 - (ay + r + gap) - 0.1;
   const armV = Math.max(0, Math.min(1.1, armRoom));
 
+  // A solid disk (same outer size as a ring of bar width) reads from far away; the thin white cross
+  // marks its center for magnified optics.
   prims.push({ t: "circle", cx, cy: ay, r: r + gap, fill: COLORS.white });
-  prims.push({ t: "circle", cx, cy: ay, r, stroke: COLORS.ink, w: barW });
+  prims.push({ t: "circle", cx, cy: ay, r: r + bar / 2, fill: COLORS.ink });
   line(cx - r - gap, ay, cx - r - gap - armH, ay, barW);
   line(cx + r + gap, ay, cx + r + gap + armH, ay, barW);
   if (armV > 0.2) line(cx, ay + armDir * (r + gap), cx, ay + armDir * (r + gap + armV), barW);
-  line(cx - 0.09, ay, cx + 0.09, ay, 0.9);
-  line(cx, ay - 0.09, cx, ay + 0.09, 0.9);
+  line(cx - 0.09, ay, cx + 0.09, ay, 0.9, COLORS.white);
+  line(cx, ay - 0.09, cx, ay + 0.09, 0.9, COLORS.white);
   text({ x: cx + r + 0.22, y: ay - 0.13, text: "AIM", size: 13, bold: true, color: COLORS.ink, halo: COLORS.white });
 
   // ------------------------------------------------------------ IMPACT

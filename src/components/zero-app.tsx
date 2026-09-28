@@ -21,6 +21,7 @@ import { renderPackPdf, type PackPart } from "@/lib/target/pdf";
 import { buildTargetScene, distanceLabel, unitLabel } from "@/lib/target/scene";
 import { distanceToDisplay, distanceUnit, trimNumber, type UnitSystem } from "@/lib/units";
 import { Desk, type DocTab, type Zoom } from "./desk";
+import { ChartDialogBody } from "./chart-dialog";
 import { packPageCount, PrintPack, QuickFacts, ResultHero, ResultPill, type PackInclude } from "./inspector";
 import { SectionSheetBody, SetupList, SetupRail, type SectionId, type SetupContext } from "./setup-sections";
 import { Sheet } from "./sheet";
@@ -131,7 +132,7 @@ function packFileName(setup: Setup, loadShort: string) {
   return `zero-targets_${slug}_${trimNumber(setup.barrelIn, 2)}in_${d(setup.targetYd)}-for-${d(setup.zeroYd)}-zero.pdf`;
 }
 
-type SheetId = SectionId | "print" | "about" | null;
+type SheetId = SectionId | "print" | "about" | "chart" | null;
 
 export function ZeroApp({ about }: { about: React.ReactNode }) {
   const [setup, setSetup] = useState<Setup>(DEFAULT_SETUP);
@@ -288,7 +289,7 @@ export function ZeroApp({ about }: { about: React.ReactNode }) {
         </button>
       </header>
 
-      <div className="flex min-h-0 grow flex-col desk:grid desk:grid-cols-[372px_minmax(0,1fr)_340px]">
+      <div className="flex min-h-0 grow flex-col desk:grid desk:grid-cols-[clamp(380px,25vw,560px)_minmax(0,1fr)_clamp(340px,21vw,480px)]">
         {/* Desktop: setup rail */}
         <aside aria-label="Setup" className="hidden overflow-y-auto border-r border-line px-4 py-[18px] desk:block">
           <SetupRail ctx={ctx} />
@@ -337,7 +338,7 @@ export function ZeroApp({ about }: { about: React.ReactNode }) {
           className="hidden flex-col gap-[18px] overflow-y-auto border-l border-line bg-surface p-5 desk:flex"
         >
           <ResultHero setup={current} result={result} unit={scene.grid.unit} />
-          <QuickFacts setup={current} result={result} table={table} tab={tab} />
+          <QuickFacts setup={current} result={result} table={table} tab={tab} onExpandChart={() => setSheet("chart")} />
           <section aria-label="Print pack" className="mt-auto flex flex-col gap-3 rounded-xl border border-line bg-ground p-4">
             <h2 className="eyebrow">Print pack</h2>
             <PrintPack {...packProps} />
@@ -348,7 +349,7 @@ export function ZeroApp({ about }: { about: React.ReactNode }) {
         <div className="bg-desk desk:hidden">
           <SetupList ctx={ctx} onOpen={setSheet} />
           <div className="bg-surface px-4 pt-2 pb-6">
-            <QuickFacts setup={current} result={result} table={table} tab="target" />
+            <QuickFacts setup={current} result={result} table={table} tab="target" onExpandChart={() => setSheet("chart")} />
           </div>
         </div>
       </div>
@@ -394,6 +395,19 @@ export function ZeroApp({ about }: { about: React.ReactNode }) {
           </div>
           <PrintPack {...packProps} withTableSettings roomy />
         </div>
+      </Sheet>
+
+      <Sheet
+        open={sheet === "chart"}
+        onClose={() => setSheet(null)}
+        label="Bullet path"
+        placement={isDesk ? "center" : "bottom"}
+        wide
+        className="overflow-y-auto"
+      >
+        {sheet === "chart" && (
+          <ChartDialogBody setup={current} result={result} onClose={() => setSheet(null)} chartHeight={isDesk ? 460 : 300} />
+        )}
       </Sheet>
 
       <Sheet

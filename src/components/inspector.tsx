@@ -115,11 +115,14 @@ export function QuickFacts({
   result,
   table,
   tab,
+  onExpandChart,
 }: {
   setup: Setup;
   result: ZeroResult;
   table: BallisticTable;
   tab: DocTab;
+  /** Opens the bullet path chart in a large dialog. */
+  onExpandChart: () => void;
 }) {
   const u = setup.units;
   if (tab === "cards" || tab === "table") {
@@ -154,8 +157,23 @@ export function QuickFacts({
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-ink-2">Bullet path</span>
-        <TrajectoryChart result={result} units={u} targetYd={setup.targetYd} zeroYd={setup.zeroYd} height={170} compact />
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-ink-2">Bullet path</span>
+          <button
+            type="button"
+            onClick={onExpandChart}
+            className="flex h-7 items-center gap-1.5 rounded-md px-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+              <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />
+            </svg>
+            Enlarge
+          </button>
+        </div>
+        {/* The small chart is a preview: a click opens the large one (hover still reads values). */}
+        <div onClick={onExpandChart} className="cursor-zoom-in">
+          <TrajectoryChart result={result} units={u} targetYd={setup.targetYd} zeroYd={setup.zeroYd} height={170} compact />
+        </div>
       </div>
     </div>
   );
