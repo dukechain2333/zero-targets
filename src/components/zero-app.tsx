@@ -298,8 +298,10 @@ export function ZeroApp({ about }: { about: React.ReactNode }) {
       </header>
 
       <div className="flex min-h-0 grow flex-col desk:grid desk:grid-cols-[clamp(380px,25vw,560px)_minmax(0,1fr)_clamp(340px,21vw,480px)]">
-        {/* Desktop: setup rail */}
-        <aside aria-label="Setup" className="hidden overflow-y-auto border-r border-line px-4 py-[18px] desk:block">
+        {/* Desktop: setup rail. The scrolling side columns are positioned so that absolutely positioned
+            children (sr-only labels) scroll inside them instead of stretching the page, which would let
+            the whole page scroll under the desk. */}
+        <aside aria-label="Setup" className="relative hidden overflow-y-auto border-r border-line px-4 py-[18px] desk:block">
           <SetupRail ctx={ctx} />
         </aside>
 
@@ -343,7 +345,7 @@ export function ZeroApp({ about }: { about: React.ReactNode }) {
         {/* Desktop: inspector */}
         <aside
           aria-label="Result and print"
-          className="hidden flex-col gap-[18px] overflow-y-auto border-l border-line bg-surface p-5 desk:flex"
+          className="relative hidden flex-col gap-[18px] overflow-y-auto border-l border-line bg-surface p-5 desk:flex"
         >
           <ResultHero setup={current} result={result} unit={scene.grid.unit} />
           <QuickFacts setup={current} result={result} table={table} tab={tab} onExpandChart={() => setSheet("chart")} />
