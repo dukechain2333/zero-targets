@@ -1,10 +1,10 @@
 "use client";
 
 import { useId } from "react";
-import { loadGroups } from "@/lib/ammo";
 import type { ResolvedSetup, Setup } from "@/lib/setup";
 import { CUSTOM_LOAD_ID, LIMITS } from "@/lib/setup";
 import { fmtBarrel, fmtVelocity, velocityFromDisplay, velocityToDisplay, velocityUnit } from "@/lib/units";
+import { LoadPicker } from "./load-picker";
 import { NumberInput } from "./number-input";
 
 interface Props {
@@ -28,28 +28,10 @@ export function AmmoField({ setup, resolved, onLoadChange, onChange, onShowSourc
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor={`${id}-load`} className="text-xs font-medium text-ink-2">
+        <span id={`${id}-load-label`} className="text-xs font-medium text-ink-2">
           Load
-        </label>
-        <select
-          id={`${id}-load`}
-          value={setup.loadId}
-          onChange={(e) => onLoadChange(e.target.value)}
-          className="h-10 w-full rounded-lg border border-line-strong bg-surface px-2.5 text-sm text-ink"
-        >
-          {loadGroups().map((g) => (
-            <optgroup key={g.group} label={g.group}>
-              {g.loads.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-          <optgroup label="Other">
-            <option value={CUSTOM_LOAD_ID}>Custom load (enter bullet data)</option>
-          </optgroup>
-        </select>
+        </span>
+        <LoadPicker id={`${id}-load`} labelId={`${id}-load-label`} value={setup.loadId} onChange={onLoadChange} />
         {load && (
           <p className="text-xs leading-relaxed text-ink-3">
             {load.group} · {load.dragModel} BC {load.bc} · {load.confidence}-confidence velocity data ·{" "}

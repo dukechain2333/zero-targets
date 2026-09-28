@@ -37,20 +37,30 @@ export function About() {
         <h3 className="font-semibold text-ink">Ammunition data and sources</h3>
         <p className="mt-1.5 max-w-3xl">
           Muzzle velocity by barrel length comes from chronograph tests where they exist and is interpolated between
-          measured lengths. Confidence says how much of each curve is measured. Lot, temperature and barrel-to-barrel
-          spread is typically 50 to 100 fps, so a chronograph value always wins.
+          measured lengths. Confidence says how much of each curve is measured: high means the load itself was tested
+          across barrel lengths; medium means it was measured at a couple of lengths and a similar load&apos;s measured
+          curve fills in the rest; low means one reading or only the maker&apos;s rating, which often runs fast. Lot,
+          temperature and barrel-to-barrel spread is typically 50 to 100 fps, so a chronograph value always wins.
         </p>
-        <div className="mt-4 grid gap-x-8 gap-y-5 md:grid-cols-2">
+        <div className="mt-4 flex flex-col gap-2">
           {loadGroups().map(({ group, loads }) => (
-            <div key={group}>
-              <h4 className="text-[13px] font-semibold text-ink">{group}</h4>
-              <ul className="mt-1.5 flex flex-col gap-2.5">
+            <details key={group} className="group rounded-lg border border-line">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
+                <span className="text-[13px] font-semibold text-ink">
+                  {group} <span className="font-normal text-ink-3">· {loads.length} loads</span>
+                </span>
+                <svg aria-hidden viewBox="0 0 16 16" className="size-4 shrink-0 text-ink-3 transition-transform group-open:rotate-180">
+                  <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </summary>
+              <ul className="grid gap-x-8 gap-y-3 border-t border-line px-3 py-3 md:grid-cols-2">
                 {loads.map((l) => (
-                  <li key={l.id} className="text-xs text-ink-3">
+                  <li key={l.id} id={`load-${l.id}`} className="scroll-mt-4 rounded-md text-xs text-ink-3">
                     <div className="text-[13px] text-ink-2">
                       {l.name}{" "}
                       <span className="text-xs text-ink-3">
-                        · {l.dragModel} BC {l.bc} · {l.confidence} confidence
+                        {l.sku?.length ? `· ${l.sku.join(", ")} ` : ""}· {l.weightGr} gr · {l.dragModel} BC {l.bc} ·{" "}
+                        {l.confidence} confidence
                       </span>
                     </div>
                     <div>{l.notes}</div>
@@ -76,7 +86,7 @@ export function About() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </details>
           ))}
         </div>
       </section>

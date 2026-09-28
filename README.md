@@ -14,8 +14,11 @@ is a single statically rendered Next.js page, so it deploys to Vercel with no co
 
 - Presets for every input plus fully custom values: barrel length, optic height (riser), rail-to-bore
   height, zero distance, target distance.
-- Ammunition picker with published muzzle velocity by barrel length for common 5.56, .300 BLK, 9mm,
-  7.62x39, .308 and 6.5 Creedmoor loads, a chronograph override, and custom bullets (weight, G1/G7 BC).
+- Ammunition picker with about 150 factory and military loads in 5.56, .300 BLK, 9mm, 7.62x39, .308 and
+  6.5 Creedmoor, searchable by caliber, brand, weight or the code on the box. Muzzle velocity follows
+  barrel length from chronograph tests where they exist (LuckyGunner, rifleshooter.com, Ballistics by the
+  Inch and others), with a confidence level and sources for every load. Plus a chronograph override and
+  custom bullets (weight, G1/G7 BC).
 - Imperial or metric units, MOA or MIL grids (from the turret click value), five paper sizes.
 - Workbench layout: setup on the left (each choice shows what it leads to), the documents in the middle
   (Fit / 100% zoom), the result and the print pack on the right. On phones the setup opens in sheets.
@@ -54,7 +57,8 @@ npm run build
 src/app/                  page, layout, global styles
 src/components/           workbench: setup sections, desk (document previews), inspector, sheets
 src/lib/ballistics/       solver and drag tables (+ reference fixture)
-src/lib/ammo-data.ts      load presets and velocity-by-barrel data with sources
+src/lib/ammo-data/        load catalog, one file per caliber: velocity-by-barrel data with sources
+src/lib/mv-curve.ts       velocity curves: interpolation, fitting a similar load's curve to a few readings
 src/lib/compute.ts        setup -> offsets, crossings, sensitivity
 src/lib/ballistic-table.ts  range-by-range rows for the cards and table
 src/lib/target/scene.ts   printable page as drawing primitives (inches)

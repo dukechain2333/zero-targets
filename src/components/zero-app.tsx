@@ -196,9 +196,17 @@ export function ZeroApp({ about }: { about: React.ReactNode }) {
           },
     );
 
+  // Open the data sources at the current load: expand its caliber, scroll to it and flash it.
   const showSources = () => {
     setSheet("about");
-    requestAnimationFrame(() => document.getElementById("ammo-data")?.scrollIntoView({ block: "start" }));
+    requestAnimationFrame(() => {
+      const item = document.getElementById(`load-${setup.loadId}`);
+      if (!item) return document.getElementById("ammo-data")?.scrollIntoView({ block: "start" });
+      const details = item.closest("details");
+      if (details) details.open = true;
+      item.scrollIntoView({ block: "center" });
+      item.animate([{ backgroundColor: "var(--accent-soft)" }, { backgroundColor: "transparent" }], { duration: 1600, easing: "ease-out" });
+    });
   };
 
   const ctx: SetupContext = {

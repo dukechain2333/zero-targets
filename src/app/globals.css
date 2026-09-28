@@ -104,9 +104,12 @@ input[type="number"] {
   appearance: textfield;
 }
 
-:focus-visible {
-  outline: 2px solid var(--series);
-  outline-offset: 2px;
+/* In the base layer so a component's own focus style (outline-none plus a border) can replace it. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--series);
+    outline-offset: 2px;
+  }
 }
 
 /* Small uppercase labels ("SETUP", "PRINT PACK"). */

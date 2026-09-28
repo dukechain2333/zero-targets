@@ -59,9 +59,9 @@ export function computeZero(setup: Setup): ZeroResult {
   const rawMax = Math.max(zeroYd * 1.5, targetYd * 1.3, far ? far * 1.15 : zeroYd * 2, 100);
   const chartMaxYd = Math.min(Math.ceil(rawMax / 25) * 25, 600);
 
-  const step = chartMaxYd <= 150 ? 1 : chartMaxYd <= 300 ? 2 : 5;
+  // One point per yard: the integration cost is the same, and the chart can read any whole distance.
   const ranges: number[] = [];
-  for (let r = 0; r <= chartMaxYd; r += step) ranges.push(r);
+  for (let r = 0; r <= chartMaxYd; r++) ranges.push(r);
   const trajectory = sampleTrajectory(input, elevation, ranges);
 
   let apex: ZeroResult["apex"] = null;

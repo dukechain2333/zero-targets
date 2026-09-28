@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ZeroResult } from "@/lib/compute";
-import { distanceToDisplay, distanceUnit, fmtPath, trimNumber, type UnitSystem } from "@/lib/units";
+import { distanceFromDisplay, distanceToDisplay, distanceUnit, fmtPath, trimNumber, type UnitSystem } from "@/lib/units";
 
 interface Props {
   result: ZeroResult;
@@ -33,6 +33,15 @@ function ticks(lo: number, hi: number, maxTicks: number) {
   return out;
 }
 
+/** Bullet height at any range, interpolated between the per-yard samples. */
+function heightAt(pts: ZeroResult["trajectory"], yd: number) {
+  const i = pts.findIndex((p) => p.rangeYd >= yd);
+  if (i <= 0) return pts[Math.max(0, i)].heightIn;
+  const a = pts[i - 1];
+  const b = pts[i];
+  return a.heightIn + ((yd - a.rangeYd) / (b.rangeYd - a.rangeYd)) * (b.heightIn - a.heightIn);
+}
+
 function useWidth<T extends HTMLElement>() {
   const ref = useRef<T>(null);
   const [width, setWidth] = useState(640);
@@ -50,6 +59,7 @@ function useWidth<T extends HTMLElement>() {
 export function TrajectoryChart({ result, units, targetYd, zeroYd, height: HEIGHT = 300, compact = false }: Props) {
   const PAD = compact ? COMPACT_PAD : FULL_PAD;
   const [wrapRef, width] = useWidth<HTMLDivElement>();
+  // Hovered distance in whole display units (yd or m), so the readout steps 1 yd / 1 m at a time.
   const [hover, setHover] = useState<number | null>(null);
   const pts = result.trajectory;
   const metric = units === "metric";
@@ -74,17 +84,14 @@ export function TrajectoryChart({ result, units, targetYd, zeroYd, height: HEIGH
   const sy = (v: number) => PAD.top + ((y1 - v) / (y1 - y0)) * ih;
 
   const path = pts.map((p, i) => `${i ? "L" : "M"}${sx(hx(p.rangeYd)).toFixed(1)},${sy(hy(p.heightIn)).toFixed(1)}`).join("");
-  const target = pts.reduce((best, p) => (Math.abs(p.rangeYd - targetYd) < Math.abs(best.rangeYd - targetYd) ? p : best), pts[0]);
   const targetPoint = { x: hx(targetYd), y: hy(result.offsetIn) };
   const crossings = result.crossingsYd;
-  const hovered = hover != null ? pts[hover] : null;
+  const lastWhole = Math.floor(xMax);
+  const clampWhole = (v: number) => Math.min(lastWhole, Math.max(0, Math.round(v)));
+  const hovered =
+    hover != null ? { rangeYd: distanceFromDisplay(hover, units), heightIn: heightAt(pts, distanceFromDisplay(hover, units)) } : null;
 
-  const nearestIndex = (clientX: number, rect: DOMRect) => {
-    const v = ((clientX - rect.left - PAD.left) / iw) * xMax;
-    let best = 0;
-    for (let i = 1; i < pts.length; i++) if (Math.abs(hx(pts[i].rangeYd) - v) < Math.abs(hx(pts[best].rangeYd) - v)) best = i;
-    return best;
-  };
+  const nearestWhole = (clientX: number, rect: DOMRect) => clampWhole(((clientX - rect.left - PAD.left) / iw) * xMax);
 
   const dUnit = distanceUnit(units);
   const label = (yd: number) => `${trimNumber(hx(yd), 0)} ${dUnit}`;
@@ -98,13 +105,14 @@ export function TrajectoryChart({ result, units, targetYd, zeroYd, height: HEIGH
         role="img"
         aria-label={`Bullet path relative to the line of sight from 0 to ${label(result.chartMaxYd)}. At the target distance of ${label(targetYd)} it is ${fmtPath(result.offsetIn, units)}.`}
         tabIndex={0}
-        onPointerMove={(e) => setHover(nearestIndex(e.clientX, e.currentTarget.getBoundingClientRect()))}
+        onPointerMove={(e) => setHover(nearestWhole(e.clientX, e.currentTarget.getBoundingClientRect()))}
         onPointerLeave={() => setHover(null)}
         onKeyDown={(e) => {
           if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
           e.preventDefault();
-          const cur = hover ?? pts.indexOf(target);
-          setHover(Math.min(pts.length - 1, Math.max(0, cur + (e.key === "ArrowRight" ? 1 : -1))));
+          const cur = hover ?? clampWhole(hx(targetYd));
+          const step = e.shiftKey ? 10 : 1;
+          setHover(clampWhole(cur + (e.key === "ArrowRight" ? step : -step)));
         }}
         onBlur={() => setHover(null)}
       >
@@ -203,7 +211,9 @@ export function TrajectoryChart({ result, units, targetYd, zeroYd, height: HEIGH
             {hovered.heightIn > 0 ? "+" : ""}
             {fmtPath(hovered.heightIn, units)}
           </div>
-          <div className="text-ink-3">at {label(hovered.rangeYd)}</div>
+          <div className="text-ink-3">
+            at {hover} {dUnit}
+          </div>
         </div>
       )}
     </div>
